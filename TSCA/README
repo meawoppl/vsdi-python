@@ -1,0 +1,10 @@
+TSCA algorithim based on:
+
+@article{blumenfeld2009algorithm,
+  title={{An algorithm for the analysis of temporally structured multidimensional measurements}},
+  author={Blumenfeld, B.},
+  journal={Frontiers in Computational Neuroscience},
+  volume={3},
+  year={2009},
+  publisher={Frontiers Research Foundation}
+}

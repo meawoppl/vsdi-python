@@ -1,0 +1,11 @@
+This is my take on a linear model for VSDI signal 
+decomposition as proposed in:
+
+@article{reynaud2010linear,
+  title={{Linear model decomposition for voltage-sensitive dye imaging signals: Application in awake behaving monkey}},
+  author={Reynaud, A. and Takerkart, S. and Masson, G.S. and Chavane, F.},
+  journal={NeuroImage},
+  issn={1053-8119},
+  year={2010},
+  publisher={Elsevier}
+}
