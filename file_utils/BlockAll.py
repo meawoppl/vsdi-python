@@ -25,7 +25,7 @@ for path in dr.exp_paths:
     if os.path.isfile(out_full): 
         try:
             print "Testing: (%s)" % out_full
-            test = tables.openFile(out_full)
+            test = tables.openFile(out_full, "r+")
             test.close()
             print "Looks good, so skipping", out_fn
             continue

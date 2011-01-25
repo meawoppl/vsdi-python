@@ -1,5 +1,18 @@
 from numpy import array
 import os, re
+from pyparsing import Literal, Word, nums, SkipTo
+
+def make_int(s, loc, toks): 
+    toks[0] = int(toks[0])
+
+monkey_name  = Literal("Frodo") ^ Literal("Dale") # TODO, other monkeys here
+numeric_date = Word(nums, exact=4) + Word(nums, exact=2) + Word(nums, exact=2)
+condition_string = Literal("C").suppress() + Word(nums).setParseAction(make_int)
+run_string       = Literal("E").suppress() + Word(nums).setParseAction(make_int)
+block_string     = Literal("B").suppress() + Word(nums).setParseAction(make_int)
+exp_setup        = (condition_string + Literal("_").suppress() + run_string + block_string)
+
+bf_name_parser = monkey_name.suppress() + Literal("DyeRV1").suppress() + exp_setup + Literal(".BLK").suppress()
 
 # This is the regex that grabs the condition number, experiment number, and trial number
 fn_re = re.compile("C([0-9]+)_?(?:[0-9]+_)E([0-9]+)B([0-9]+)")
@@ -46,7 +59,6 @@ class openDIR:
         assert len(d) == 1, "There can be only one! (htbfile): \n %s" % "\n\t".join(d)
         return d[0]
 
-
     def BLK_iter(self, path):
         '''Iterate over the .BLK files associated with an experimental path.'''
         # Grab the files in the directory with ".BLK" suffix
@@ -60,20 +72,24 @@ class openDIR:
         # Loop over all the block files
         for filename in block_file_names:
             # Regex out the numbers we care about, and int convert them
-            cn, en, tn = [int(val) for val in fn_re.findall(filename)[0]]
+            cn, en, tn = [int(val) for val in bf_name_parser.parseString(os.path.split(filename)[-1])]
 
+            print cn, en, tn
+            
             # Stick them in lists
             condition_numbers.append( cn )
             experiment_numbers.append( en )
             trial_numbers.append( tn )
 
-        # Now, lets sort this shit on the condition number
+        # Cast all the above to arrays . . . 
         condition_numbers = array(condition_numbers)
         experiment_numbers = array(experiment_numbers)
         trial_numbers = array(trial_numbers)
         block_file_names = array(block_file_names)
 
+        # Now, lets sort this shit on the trial number
         tn_sorter = trial_numbers.argsort()
+
         condition_numbers = condition_numbers.take(tn_sorter)
         experiment_numbers = experiment_numbers.take(tn_sorter)
         trial_numbers = trial_numbers.take(tn_sorter)

@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # Collapse the first two space axes
     datae = datae.mean(axis=0).mean(axis=0)
 
-    conditions = h5.block.condition[:]
+    conditions = h5.root.condition[:]
 
     uniq_conditions = set(conditions)
 

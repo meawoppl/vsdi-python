@@ -61,7 +61,7 @@ def dir_to_h5(directory, h5_obj, h5_path="/"):
     array_created = False
     for n, (cn, bn, tn, f) in enumerate(dir_listing.BLK_iter(dir_listing.exp_paths[0])):
         print "Starting", n, "of", dir_listing.total_trial_count
-        print "\tLoading .BLK (%s)" % f
+        print "\tLoading .BLK (%s) cn:%i tn:%i" % (f, cn, tn)
 
         # Open the block file
         bf = openBLK(f)
@@ -91,8 +91,8 @@ def dir_to_h5(directory, h5_obj, h5_path="/"):
 
     # Create the condition and trial number arrays.  
     # (i.e avoid redoing that ugly file name munging each time)
-    h5_obj.createArray(h5_path, "condition", condition)
-    h5_obj.createArray(h5_path, "trial_num", trial_num)
+    h5_obj.createArray(h5_path, "condition", array(condition))
+    h5_obj.createArray(h5_path, "trial_num", array(trial_num))
 
 
     # Yay done!
