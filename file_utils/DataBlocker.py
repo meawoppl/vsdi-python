@@ -102,7 +102,7 @@ def dir_to_h5(directory, h5_obj, h5_path="/"):
 
 if __name__ == "__main__":
     import sys
-    usage = '''python DataBlocker.py dir-to-block h5-out'''
+    usage = '''python DataBlocker.py [dir-to-block] [h5-out]'''
 
     assert len(sys.argv) == 3, usage
 
