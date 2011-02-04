@@ -1,3 +1,21 @@
+# VSDI-python: This is a group of tools written in the Python 
+# programming language to decode, analyze, model, and work with voltage 
+# sensitive dye recordings. 
+# Matthew Goodman (mrg@mail.utexas.edu 2/2011
+
+# VSDI-python free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import struct
 from numpy import ( int8, int16, uint8, uint16, 
                     nbytes, fromfile )
@@ -73,25 +91,23 @@ class openHTB:
     
     The reader reads everything right off the bat.  That said if a .htb file
     is larger than the memory of the machine, this may need to be re-tooled.  
-    Given that there are structures dedicated to EMM, I don't 
-    think this will be an issue.  
+    Given that there are structures dedicated to EMM, I don't think this will 
+    be an issue.  
 
-    This code uses numpy for array storage, though any number of array like objects
-    could be dropped in, including numeric, pyrex, etc.
+    This code uses numpy for array storage, though any number of array like 
+    objects could be dropped in, including numeric, pyrex, etc.
 
     Signature: 
     htb = openHTB(filename)
     
     After loading the object will have three lists of interest, all keyed to the sequential
     databases encountered:
-
-    htb.db_names contains the string name of the database represented
-    htb.db_metas is a list ordered by the order of the appearing database in the .htb file
-        Each entry contains a dictionary keyed on the names for varibles in the C-spec'ed
-        header format that appears earlier in this file.
-    htb.db_array is a list of numpy arrays ordered by appearance of the database in the 
-    .htb file
-    '''
+      htb.db_names contains the string name of the database represented
+      htb.db_metas is a list ordered by the order of the appearing database in the .htb file
+          Each entry contains a dictionary keyed on the names for varibles in the C-spec'ed
+          header format that appears earlier in this file.
+      htb.db_array is a list of numpy arrays ordered by appearance of the database in the 
+          .htb file.  These have a dtype as specified by the file header.  '''
 
     def __init__(self, fn, debug=False):
         # Debugging flag
