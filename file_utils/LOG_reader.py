@@ -120,13 +120,26 @@ class openLOG:
 
 if __name__ == "__main__":
     # Test against all the sample Frodo log files
+    from pprint import pprint
     import os, sys
-
-    logs_dir = "sample-logs"
-    for fi in os.listdir(logs_dir):
-        path = os.path.join(logs_dir, fi)
         
-        print "Parsing File:", path
-        logfile_reader = openLOG(path)
-        sys.stdout.flush()
-        print '\tDone'
+    if sys.argv[1] == "-t":
+        logs_dir = "sample-logs"
+        for fi in os.listdir(logs_dir):
+            path = os.path.join(logs_dir, fi)
+            
+            print "Parsing File:", path
+            logfile_reader = openLOG(path)
+            sys.stdout.flush()
+            print '\tDone'
+    elif sys.argv[1]=="-h":
+        lg = openLOG(sys.argv[2])
+        pprint(lg.header_dict)
+
+    elif sys.argv[1]=="-f":
+        lg = openLOG(sys.argv[2])
+        pprint(lg.footer_dict)
+
+    elif sys.argv[1]=="-t":
+        lg = openLOG(sys.argv[2])
+        pprint(lg.trial_dict)

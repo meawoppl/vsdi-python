@@ -3,18 +3,17 @@ from HTB_reader import openHTB
 from LOG_reader import openLOG
 from DIR_reader import openDIR
 
-import tables
+import tables, os
 from tables.nodes import filenode
 
 from numpy import *
 
 def dir_to_h5(directory, h5_obj, h5_path="/"):
     # Use the openDIR object to deal with the ugliness
-    dir_listing = openDIR(directory)
+    dir_listing = openDIR( directory )
 
     # You know what they say about assertions
-    assert (len(dir_listing.exp_paths) == 1), "This function only does 1 run at a time."
-
+    assert (len(dir_listing.exp_paths) == 1), "This function only does 1 run at a time:" + str(dir_listing.exp_paths)
     print dir_listing.total_trial_count, "blockfiles detected, compressing . . ."
 
     # Create a leaf in the h5 for HTB and LOG file related data
