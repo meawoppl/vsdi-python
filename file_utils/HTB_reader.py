@@ -72,8 +72,8 @@ class openHTB:
     Experiment Coordination Platform.
     
     The reader reads everything right off the bat.  That said if a .htb file
-    is larger than the memory of the machine, this may need to be retooled.  
-    Given that there are structures dedicated to EMM and the 80-x86 arc, I don't 
+    is larger than the memory of the machine, this may need to be re-tooled.  
+    Given that there are structures dedicated to EMM, I don't 
     think this will be an issue.  
 
     This code uses numpy for array storage, though any number of array like objects
@@ -82,14 +82,15 @@ class openHTB:
     Signature: 
     htb = openHTB(filename)
     
-    After loading the object will have three ists of interest, all keyed to the sequential
+    After loading the object will have three lists of interest, all keyed to the sequential
     databases encountered:
 
     htb.db_names contains the string name of the database represented
     htb.db_metas is a list ordered by the order of the appearing database in the .htb file
         Each entry contains a dictionary keyed on the names for varibles in the C-spec'ed
         header format that appears earlier in this file.
-    htb.db_metas is a list ordered by the order of the appearing database in the .htb file
+    htb.db_array is a list of numpy arrays ordered by appearance of the database in the 
+    .htb file
     '''
 
     def __init__(self, fn, debug=False):
