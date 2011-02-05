@@ -20,7 +20,7 @@ def two_dee_normed_gaussian(sigma_in_px, size):
 times  = linspace(0,1.0, 1000)
 on_off = ((sin(times*10*pi) < 0.0) * 2.0) - 1.
 
-def dV_dt(V, t, I=on_off, It=times, g0=-1, C=1, G_sigma=10, B_sigma=20):
+def dV_dt(V, t, I=on_off, It=times, g0=1, C=1, G_sigma=10, B_sigma=20):
     ''' 
     This is the equation describing the population gain control model.
     This gets integrated by odeint to determine (n-dimensional) response 
@@ -46,7 +46,7 @@ def dV_dt(V, t, I=on_off, It=times, g0=-1, C=1, G_sigma=10, B_sigma=20):
     B = two_dee_normed_gaussian(B_sigma, V.shape)
 
     # Compute : C (dv/dt) = I*G + (g0(1+I*B)) V
-    dv_dt = ( (Ic*G) + (g0 * Ic * B * V ) )/ C
+    dv_dt = ( (Ic*G) + (Ic * B * (g0 + V)  ) )/ C
 
     # Squish it back to the vector
     return dv_dt.flatten()
@@ -58,7 +58,10 @@ tc = 1.0 * (tc > 0)
 orig_shape = (101, 101)
 
 times_of_interest = linspace(0.0, 1.0, 100)
-starting = zeros(orig_shape).flatten()
+starting = ones(orig_shape).flatten()
+
+on_off[:] = 0
+on_off[500:750] = 0
 
 results = integrate.odeint(dV_dt, starting, times_of_interest)
 results = results.reshape(tuple([-1]) + orig_shape)
