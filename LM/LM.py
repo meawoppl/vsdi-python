@@ -1,7 +1,7 @@
 from scipy import *
 from scipy import optimize, ndimage
 from warnings import warn
-
+from do_once import DoOnce
 
 def calc_fq(times, pulse_delay, on_time, off_time, pulse_number):
     '''This develops a group of baisis functions somewhat like our
@@ -32,6 +32,10 @@ def calc_fq(times, pulse_delay, on_time, off_time, pulse_number):
 
 
 def calc_ra(times, a1, a2, a3, a4):
+    '''This is the function to generate a lot of signal-like
+    functions.  I really only implemented it to visually check 
+    the similarity of the eigenvalues I extracted with plots
+    from the paper.'''
     # Sums of times, basically, times at which the funciton branches
     # Calculating this upfront minimizes later confusion
     a12   = a1   + a2
@@ -58,25 +62,32 @@ def calc_ra(times, a1, a2, a3, a4):
     # answers[group5] = 0    
     return answers
 
-def est_exp_decay(time_vector, signals, hb_in_hz=2):
-    # Time x Signal-Number
+
+def blank_fit_function(time_vector, a, b, c, tau, phi, hb_in_hz):
+    return a * (exp(-time_vector/tau) - 1) + b * sin(2 * pi * hb_in_hz * time_vector - phi) + c
+
+def est_exp_decay(time_vector, mean_signal):
     # TODO, docsting and assert docs
-    assert signals.ndim == 2
-    assert signals.shape[0] == time_vector.size
-
+    assert mean_signal.shape == time_vector.shape
     # First_frame normalize the signal
-    first_frame = signals[0,:]
-    sig_norm = (signals - first_frame) / first_frame
-
+    first_frame = mean_signal[0]
+    # This little function returns the sum of squared errors
     def sum_sq_err(parms):
-        a, b, c, tau, phi = parms
-        fit_fun = a * (exp(-time_vector/tau) - 1) + b * sin(2 * time_vector - phi) + c
-        err = (sig_norm - fit_fun[:,newaxis])**2
-        print a, b, c, tau, phi, err.sum()
+        # Asplode the array (vector required for the optimizer)
+        a, b, c, tau, phi, hb_in_hz = parms
+        
+        # Calculare the expected values
+        expected_values = blank_fit_function(time_vector, a, b, c, tau, phi, hb_in_hz)
+
+        # Sum of squared errors
+        err = (mean_signal - expected_values)**2
+
+        # TODO: Debugging statement
+        print a, b, c, tau, phi, hb_in_hz, err.sum()
         return err.sum()
 
-    c_guess = array([0.01,0,sig_norm.mean(),1,0])
-
+    # Starting guess . . . 
+    c_guess = array([0.01,0, mean_signal.mean(), 1., 0., 2.])
     return optimize.fmin(sum_sq_err, c_guess)
 
 
@@ -103,13 +114,23 @@ class LM_Decomposer:
         # Make sum to one, so coeff on this component is mean signal
         self.constant /= self.constant.sum() 
 
+        # This is a marker to make sure the matrix 
+        # we do pseudoinverses on is current
+        self._matrix_current = False
+
     def add_signal(self, sig):
+        # Matrix is now out of date
+        self._matrix_current = False
+        
         # Stupid check each signal before we add it.  
         # Must be the same length as the time array
         assert sig.size == self.times.size, "Must be same length as time array"
         self.signals.append(sig)
 
     def add_noise(self, sig, typ):
+        # Matrix is now out of date
+        self._matrix_current = False
+
         # Like signals, but label the types to do stuff later
         assert sig.size == self.times.size, "Must be same length as time array"
         self.noises.append(sig)
@@ -169,14 +190,69 @@ class LM_Decomposer:
         # Add the exp falloff as a noise 
         self.add_noise(exp(-times/time_const) - 1., "exp")
 
+    def _force_matrix(self):
+        if self._matrix_current:
+            return
+        self.M = matrix(r_[tuple(signals + noises)])
+        
+
+
+    def decompose_signal(self, signal):
+        assert (signal.shape == self.times.shape), "Decomposed signal must match times"
+
+        # Make sure the matrix is up to date
+        self._force_matrix()
+        
+@DoOnce
+def compute_mean_centerblock_conditions(hdf5_filename):
+    '''This functions takes an hdf5 file as an argument, and 
+    returns a dictionary of (center averaged) time courses 
+    keyed to the experiment condition'''
+
+    # Open a hdf5 object of the give filename
+    h5 = tables.openFile(hdf5_filename)
+
+    # Pull out the middle of the block for all times and all trials
+    datae = h5.root.block[200:300,200:300,:,:]
+
+    # Collapse the first two space axes remainder is (time x trials)
+    datae = datae.mean(axis=0).mean(axis=0)
+    
+    # Grab the conditions out of the array, and find the unique ones
+    conditions = h5.root.condition[:]
+    uniq_conditions = set(conditions)
+
+    # Define a dict to collect the datas in 
+    cn_to_meantrace = {}
+
+    # For each condition, collapse on trial
+    for u in uniq_conditions:
+        # Which are this condition number
+        current_condition = (conditions == u)
+
+        # Make an array that are only that condition and average all trials
+        trace = datae[:,current_condition].mean(axis=1)
+
+        # Make it dF/F and record
+        cn_to_meantrace[u] = (trace - trace[0])/trace[0]
+    
+    return cn_to_meantrace
+        
+
+
 
 if __name__ == "__main__":
     # Now lets average the exp. falloff of our dataset.  
     import tables
     from pylab import *
+    
+    # Laptop
+    cn_to_tc = compute_mean_centerblock_conditions("/home/meawoppl/Frodo20100716-run0.h5", do_debug=True)
 
+    # # Office
+    # cn_to_tc = compute_mean_centerblock_conditions("/media/Local Disk/Frodo20100716-run0.h5")
 
-    exp_times = linspace(0, 1200, 132)
+    exp_times = linspace(0, 1.2, 132)
     lmd = LM_Decomposer(exp_times)
 
     # # This is just like from the paper to confirm that the
@@ -186,32 +262,34 @@ if __name__ == "__main__":
     # a_steps = array([11,  18, 15, 4], dtype=int32)
     # lmd.add_signal_group(a_mins, a_maxs, a_steps)
 
-    
-    h5 = tables.openFile("/media/Local Disk/Frodo20100716-run0.h5")
-    datae = h5.root.block[200:300,200:300,:,:]
+    figure()
+    for cn, ntr in cn_to_tc.iteritems():
+        plot(exp_times, ntr, label=str(cn), alpha=0.8)
 
-    # Collapse the first two space axes
-    datae = datae.mean(axis=0).mean(axis=0)
+        if cn == 0:
+            parms = est_exp_decay(exp_times, ntr)
+            a, b, c, tau, phi, hb_in_hz = parms
+            # hb_in_hz = 2.
 
-    conditions = h5.root.condition[:]
-
-    uniq_conditions = set(conditions)
-    print uniq_conditions
-
-    for u in uniq_conditions:
-        current_condition = (conditions == u)
-        trace = datae[:,current_condition].mean(axis=1)
-        normed_trace = (trace - trace[0])/trace[0]
-        plot(normed_trace, label=str(u))
-
-
-
-    # a, b, c, tau, f, phi = parms
-    # fit_fun = a * (exp(-time_vector/tau) - 1) + b * sin(f * time_vector - phi) + c
-
-
+            fit_vals = blank_fit_function(exp_times, a, b, c, tau, phi, hb_in_hz)
+            plot(exp_times, fit_vals, "black", linestyle="--", alpha=0.9,  label="Blank Fit")
 
     legend()
+    equation_text = r"FIT = $a \, e^{(-t/\tau) - 1} + b \, \sin(2 \pi f \, t + \phi) +c$"
+
+    var_text1 = r"$a=%.03E \,\,\,\, \tau=%.03f \,\,\,\,  b=%.03E$" % (a, tau, b)
+    var_text2 = r"$f=%.03f \,\,\,\, \phi=%.03E \,\,\,\,  c=%.03E$" % (hb_in_hz, phi, c)
+    text(0.05, -0.0045, equation_text)
+    text(0.05,-0.0047, var_text1)
+    text(0.05,-0.0049, var_text2)
+
+    title("Center Block Mean per Condiiton (Frodo20100716-run0)")
+
+    xlabel("Time in Seconds")
+    ylabel("$\Delta f/f$")
+
+    savefig("blank-fitting-params.pdf")
+
     show()
 
     
